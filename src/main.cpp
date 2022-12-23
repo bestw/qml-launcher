@@ -8,6 +8,7 @@
 #include <QIcon>
 #include <QDirIterator>
 #include <QSettings>
+#include <QLocale>
 
 #include "imageprovider.h"
 #include "process.h"
@@ -47,17 +48,25 @@ QVariantList createAppsList(const QString &path) {
 
         if (!desktopFile.childGroups().contains(DESKTOP_ENTRY_STRING))
             continue;
-        
+
         SettingsGroupRaii raii(desktopFile, DESKTOP_ENTRY_STRING);
 
         if (desktopFile.contains("NoDisplay"))
             if (desktopFile.value("NoDisplay").toBool() == 1)
                 continue;
-        
+
+        if (desktopFile.contains("NoDisplayInLauncher"))
+            if (desktopFile.value("NoDisplayInLauncher").toBool() == 1)
+                continue;
+
         AppInfo app;
         app.exec = desktopFile.value("Exec").toString().remove("\"").remove(QRegExp(" %."));
         app.icon = desktopFile.value("Icon", "application").toString();
         app.name = desktopFile.value("Name").toString();
+
+        if (desktopFile.contains(QString("Name[%1]").arg(QLocale::system().name()))) {
+            app.name = desktopFile.value(QString("Name[%1]").arg(QLocale::system().name())).toString();
+        }
 
         ret.append(QStringList{app.name, app.icon, app.exec});
     }
